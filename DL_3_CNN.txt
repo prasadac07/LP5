@@ -1,0 +1,116 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from tensorflow.keras.datasets import fashion_mnist
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense,Flatten,Conv2D, MaxPooling2D
+from tensorflow.keras.utils import to_categorical
+
+
+train_df=pd.read_csv("fashion-mnist_train.csv")
+test_df=pd.read_csv("fashion-mnist_test.csv")
+
+train_df.head()
+
+train_x=train_df.drop('label',axis=1)
+train_y=train_df['label']
+
+test_x=test_df.drop('label',axis=1)
+test_y=test_df['label']
+
+print(train_x.shape)
+print(train_y.shape)
+print(test_x.shape)
+print(test_y.shape)
+
+train_x=train_x.values.reshape(-1,28,28,1)
+test_x=test_x.values.reshape(-1,28,28,1)
+
+
+print(train_x.shape)
+print(train_y.shape)
+print(test_x.shape)
+print(test_y.shape)
+
+
+train_x=train_x.astype('float32')/255.0
+test_x=test_x.astype('float32')/255.0
+
+
+train_y.value_counts()
+
+
+#building model
+model=Sequential()
+
+#1-1st convo
+model.add(Conv2D(32,kernel_size=(3,3),activation='relu',input_shape=(28,28,1)))
+#2- frist max
+model.add(MaxPooling2D(pool_size=(2,2)))
+#3- 2nd convo
+model.add(Conv2D(64,kernel_size=(3,3),activation='relu'))
+#4- 2nd pool
+model.add(MaxPooling2D(pool_size=(2,2)))
+#5- flatten
+model.add(Flatten())
+#6- hidden layer
+model.add(Dense(128,activation='relu'))
+#7- output layer
+model.add(Dense(10,activation='softmax'))
+
+
+#compile the model
+model.compile(optimizer='adam',loss='sparse_categorical_crossentropy',metrics=['accuracy'])
+
+
+#fit model- train
+model.fit(train_x,train_y,validation_split=0.2,epochs=5)
+
+
+model.summary()
+
+loss,accuracy=model.evaluate(test_x,test_y)
+
+
+
+print(accuracy)
+
+
+for i in range(100):
+    plt.imshow(train_x[i].reshape(28,28),cmap='gray')
+    plt.title(train_y[i])
+    plt.show()
+
+
+# 2-pullover, 9-ankle_boot ,6-shirt, 0-tshirt,3-dress,4-coat,5-sandal,8-bag,7-sneaker,1-trouser
+
+# #label_names = {
+#     0:'t_shirt',
+#     1:'trouser',
+#     2:'pullover',
+#     3:'dress',
+#     4:'coat',
+#     5:'sandal',
+#     6:'shirt',
+#     7:'sneaker',
+#     8:'bag',
+#     9:'ankle_boot'
+# }
+
+
+label_names = ['t_shirt', 'trouser', 'pullover', 'dress', 'coat',
+               'sandal', 'shirt', 'sneaker', 'bag', 'ankle_boot']
+
+
+def predict(id_):
+    prediction=model.predict(test_x[id_:id_+1])
+    predicted_label=label_names[np.argmax(prediction)]
+    print("Predicted:", predicted_label)
+    plt.imshow(test_x[id_].reshape(28,28),cmap='gray')
+    plt.axis('off')
+    plt.show()
+
+
+for i in range(10,20):
+    predict(i)
