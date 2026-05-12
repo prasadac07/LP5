@@ -1,0 +1,422 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM,Dense,Dropout
+
+
+
+df=pd.read_csv("goog.csv")
+
+df.head()
+
+df.shape
+
+df.info
+df.isnull().sum()
+
+close_data=df[['Close']]
+
+close_data.head()
+
+
+scaler=MinMaxScaler()
+scaled_data=scaler.fit_transform(close_data)
+
+
+X=[]
+y=[]
+
+time_step=5
+
+for i in range(time_step,len(scaled_data)):
+    X.append(scaled_data[i-time_step:i,0])
+    y.append(scaled_data[i,0])
+    
+
+
+X=np.array(X)
+y=np.array(y)
+
+
+len(X)
+
+len(y)
+
+X.shape
+
+X=X.reshape(X.shape[0],X.shape[1],1)
+
+X.shape
+split=int(0.8*len(X))
+
+
+X_train=X[:split]
+y_train=y[:split]
+
+X_test=X[split:]
+y_test=y[split:]
+
+
+print("\nTraining Samples:", len(X_train))
+print("Testing Samples:", len(X_test))
+
+
+model=Sequential()
+
+model.add(LSTM(units=50,return_sequences=True,input_shape=(X_train.shape[1],1)))
+
+model.add(Dropout(0.2))
+model.add(LSTM(units=50))
+model.add(Dropout(0.2))
+
+
+model.add(Dense(25,activation='relu'))
+model.add(Dense(1))
+
+model.compile(optimizer='adam',loss='mean_squared_error')
+
+history=model.fit(
+    X_train,
+    y_train,
+    epochs=20,
+    batch_size=1,
+    validation_data=(X_test, y_test),
+    shuffle=False,
+    verbose=1
+)
+
+model.summary()
+
+predicted_price=model.predict(X_test)
+
+
+print(predicted_price)
+
+predicted_price=scaler.inverse_transform(predicted_price)
+
+print(predicted_price)
+
+print(y_test)
+
+y_test=scaler.inverse_transform(y_test.reshape(-1,1))
+
+mse = mean_squared_error(
+    y_test,
+    predicted_price
+)
+
+print(mse)
+print("RMSE:",np.sqrt(mse))
+
+plt.plot(y_test,color='blue',label='real prices of google stock')
+plt.plot(predicted_price,color='red',label='Predicted prices of google stock')
+plt.legend()
+plt.title("Google Stock Price Prediction using RNN")
+
+plt.xlabel("Time")
+plt.ylabel("Stock Price")
+
+
+
+plt.figure(figsize=(10,5))
+
+plt.plot(history.history['loss'],
+         label='Training Loss')
+
+plt.plot(history.history['val_loss'],
+         label='Validation Loss')
+
+plt.title("Training vs Validation Loss")
+
+plt.xlabel("Epochs")
+plt.ylabel("Loss")
+
+plt.legend()
+
+plt.grid(True)
+
+plt.show()
+
+
+
+last_days = scaled_data[-time_step:]
+
+last_days = last_days.reshape(1,time_step,1)
+
+next_day = model.predict(last_days)
+
+next_day_price = scaler.inverse_transform(next_day)
+
+print("\nPredicted Next Day Google Stock Price:")
+
+print(next_day_price)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# =========================================================
+# Google Stock Price Prediction using RNN (LSTM)
+# FINAL WORKING VERSION
+# =========================================================
+
+# =========================================================
+# Import Libraries
+# =========================================================
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense, Dropout
+
+# =========================================================
+# Load Dataset
+# =========================================================
+
+dataset = pd.read_csv("goog.csv")
+
+print("Dataset Shape:", dataset.shape)
+
+print(dataset.head())
+
+# =========================================================
+# Select Close Column
+# =========================================================
+
+data = dataset[['Close']]
+
+# =========================================================
+# Normalize Data
+# =========================================================
+
+scaler = MinMaxScaler(feature_range=(0,1))
+
+scaled_data = scaler.fit_transform(data)
+
+# =========================================================
+# Create Sequences
+# =========================================================
+
+X = []
+y = []
+
+# SMALL VALUE because dataset is small
+time_step = 5
+
+for i in range(time_step, len(scaled_data)):
+    
+    X.append(scaled_data[i-time_step:i, 0])
+    y.append(scaled_data[i, 0])
+
+# Convert into NumPy Arrays
+X = np.array(X)
+y = np.array(y)
+
+# =========================================================
+# Check Data
+# =========================================================
+
+print("\nTotal Sequences:", len(X))
+
+# =========================================================
+# Reshape for RNN
+# =========================================================
+
+X = X.reshape((X.shape[0], X.shape[1], 1))
+
+print("X Shape:", X.shape)
+print("y Shape:", y.shape)
+
+# =========================================================
+# Split Data
+# =========================================================
+
+split = int(0.8 * len(X))
+
+X_train = X[:split]
+y_train = y[:split]
+
+X_test = X[split:]
+y_test = y[split:]
+
+print("\nTraining Samples:", len(X_train))
+print("Testing Samples:", len(X_test))
+
+# =========================================================
+# Build RNN Model
+# =========================================================
+
+model = Sequential()
+
+# First LSTM Layer
+model.add(LSTM(
+    units=50,
+    return_sequences=True,
+    input_shape=(X_train.shape[1],1)
+))
+
+model.add(Dropout(0.2))
+
+# Second LSTM Layer
+model.add(LSTM(units=50))
+
+model.add(Dropout(0.2))
+
+# Dense Layers
+model.add(Dense(25, activation='relu'))
+
+model.add(Dense(1))
+
+# =========================================================
+# Compile Model
+# =========================================================
+
+model.compile(
+    optimizer='adam',
+    loss='mean_squared_error'
+)
+
+# =========================================================
+# Model Summary
+# =========================================================
+
+model.summary()
+
+# =========================================================
+# Train Model
+# =========================================================
+
+history = model.fit(
+    X_train,
+    y_train,
+    epochs=20,
+    batch_size=1,
+    validation_data=(X_test, y_test),
+    shuffle=False,
+    verbose=1
+)
+
+# =========================================================
+# Predict
+# =========================================================
+
+predicted_prices = model.predict(X_test)
+
+# Convert back to original values
+predicted_prices = scaler.inverse_transform(predicted_prices)
+
+real_prices = scaler.inverse_transform(
+    y_test.reshape(-1,1)
+)
+
+# =========================================================
+# RMSE
+# =========================================================
+
+mse = mean_squared_error(
+    real_prices,
+    predicted_prices
+)
+
+rmse = np.sqrt(mse)
+
+print("\nRMSE:", rmse)
+
+# =========================================================
+# Plot Prediction Graph
+# =========================================================
+
+plt.figure(figsize=(12,6))
+
+plt.plot(
+    real_prices,
+    color='blue',
+    label='Real Google Stock Price'
+)
+
+plt.plot(
+    predicted_prices,
+    color='red',
+    label='Predicted Google Stock Price'
+)
+
+plt.title("Google Stock Price Prediction using RNN")
+
+plt.xlabel("Time")
+plt.ylabel("Stock Price")
+
+plt.legend()
+
+plt.grid(True)
+
+plt.show()
+
+# =========================================================
+# Plot Loss Graph
+# =========================================================
+
+plt.figure(figsize=(10,5))
+
+plt.plot(history.history['loss'],
+         label='Training Loss')
+
+plt.plot(history.history['val_loss'],
+         label='Validation Loss')
+
+plt.title("Training vs Validation Loss")
+
+plt.xlabel("Epochs")
+plt.ylabel("Loss")
+
+plt.legend()
+
+plt.grid(True)
+
+plt.show()
+
+# =========================================================
+# Predict Next Day Price
+# =========================================================
+
+last_days = scaled_data[-time_step:]
+
+last_days = last_days.reshape(1,time_step,1)
+
+next_day = model.predict(last_days)
+
+next_day_price = scaler.inverse_transform(next_day)
+
+print("\nPredicted Next Day Google Stock Price:")
+
+print(next_day_price)
+	
