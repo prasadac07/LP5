@@ -1,0 +1,114 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+df=pd.read_csv('HousingData.csv')
+
+df.head()
+
+df.shape
+df.describe()
+
+# check for missing values
+
+df.isnull().sum()
+
+df.fillna(df.mean(),inplace=True)
+
+sns.heatmap(df.corr())
+plt.title('Correlation Heatmap')
+sns.histplot(df['MEDV'])
+
+X=df.drop('MEDV',axis=1)
+y=df['MEDV']
+
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error,mean_absolute_error,r2_score
+
+scaler=StandardScaler()
+X_scaled=scaler.fit_transform(X)
+
+X_train,X_test,y_train,y_test=train_test_split(X_scaled,y,test_size=0.2,random_state=42)
+
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+
+model=Sequential()
+
+model.add(Dense(64,activation='relu',input_shape=(X_train.shape[1],)))
+model.add(Dense(32,activation='relu'))
+model.add(Dense(16,activation='relu'))
+
+model.add(Dense(1))
+
+#compile
+model.compile(optimizer='adam',loss='mse',metrics=['mae'])
+
+#train
+
+model.fit(X_train,y_train,validation_split=0.2,epochs=100)
+
+model.summary()
+
+#predict
+predictions=model.predict(X_test)
+
+mae=mean_absolute_error(y_test,predictions)
+print("Mean absokute error",mae)
+mse = mean_squared_error(y_test, predictions)
+print("Mean Squared Error:", mse)
+rmse=np.sqrt(mse)
+print(rmse)
+r2 = r2_score(y_test, predictions)
+print("R2 Score:", r2)
+
+
+plt.figure(figsize=(8,5))
+
+# Actual values
+plt.scatter(
+    range(len(y_test)),
+    y_test,
+    color='blue',
+    label='Actual'
+)
+
+# Predicted values
+plt.scatter(
+    range(len(predictions)),
+    predictions,
+    color='red',
+    label='Predicted'
+)
+
+plt.xlabel("Data Points")
+plt.ylabel("House Prices")
+plt.title("Actual vs Predicted Prices")
+
+plt.legend()
+
+plt.show()
+
+
+plt.plot(y_test.values, label='Actual')
+plt.plot(predictions, label='Predicted')
+
+plt.legend()
+plt.show()
+
+
+sample = [[
+    0.1, 18.0, 2.31, 0, 0.538,
+    6.575, 65.2, 4.09, 1,
+    296, 15.3, 396.9, 4.98
+]]
+
+sample_scaled = scaler.transform(sample)
+
+prediction = model.predict(sample_scaled)
+
+print(prediction[0][0])
